@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entraînement Devanagari</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .group-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .group-btn {
+            padding: 8px 16px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .group-btn.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .group-btn:hover {
+            background: #0056b3;
+            color: white;
+        }
+        
+        .exercise-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .letter-display {
+            text-align: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .current-letter {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+            margin: 20px 0;
+            font-family: 'Times New Roman', serif;
+        }
+        
+        .devanagari-letter {
+            font-size: 72px;
+            color: #007bff;
+            margin: 20px 0;
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .canvas-area {
+            text-align: center;
+        }
+        
+        #drawingCanvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: crosshair;
+            background: white;
+        }
+        
+        .canvas-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .canvas-item {
+            text-align: center;
+        }
+        
+        .canvas-item h4 {
+            margin: 10px 0 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        #referenceCanvas, #comparisonCanvas {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            width: 200px;
+            height: 200px;
+        }
+        
+        .similarity-score {
+            background: #e8f4fd;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 5px 0;
+        }
+        
+        .score-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .canvas-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .evaluation {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .evaluation-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .stats {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .show-answer-btn {
+            background: #17a2b8;
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .show-answer-btn:hover {
+            background: #138496;
+        }
+        
+        @media (max-width: 768px) {
+            .exercise-area {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .group-selector {
+                justify-content: center;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Entraînement à l'écriture du Devanagari</h1>
+        
+        <div class="controls">
+            <div class="group-selector">
+                <button class="group-btn active" data-group="all">Toutes</button>
+                <button class="group-btn" data-group="voyelles">Voyelles</button>
+                <button class="group-btn" data-group="palatales">Palatales</button>
+                <button class="group-btn" data-group="cerebrales">Cérébrales</button>
+                <button class="group-btn" data-group="dentales">Dentales</button>
+                <button class="group-btn" data-group="labiales">Labiales</button>
+                <button class="group-btn" data-group="autres">Autres</button>
+            </div>
+        </div>
+        
+        <div class="exercise-area">
+            <div class="letter-display">
+                <h3>Lettre à dessiner :</h3>
+                <div class="current-letter" id="currentLetter">a</div>
+                <button class="btn show-answer-btn" id="showAnswerBtn">Afficher la réponse</button>
+                <div class="devanagari-letter" id="devanagariLetter" style="display: none;"></div>
+            </div>
+            
+            <div class="canvas-area">
+                <h3>Dessinez ici :</h3>
+                <canvas id="drawingCanvas" width="300" height="300"></canvas>
+                <div class="canvas-controls">
+                    <button class="btn btn-secondary" id="clearBtn">Effacer</button>
+                    <button class="btn btn-primary" id="analyzeBtn">Analyser</button>
+                    <button class="btn btn-primary" id="nextBtn">Suivant</button>
+                </div>
+                
+                <div class="similarity-score" id="similarityScore" style="display: none;">
+                    <div class="score-label">Degré de proximité</div>
+                    <div class="score-value" id="scoreValue">0%</div>
+                    <div class="score-label" id="scoreMessage">Analysez votre dessin</div>
+                </div>
+                
+                <div class="canvas-container" id="canvasContainer" style="display: none;">
+                    <div class="canvas-item">
+                        <h4>Référence</h4>
+                        <canvas id="referenceCanvas" width="200" height="200"></canvas>
+                    </div>
+                    <div class="canvas-item">
+                        <h4>Comparaison</h4>
+                        <canvas id="comparisonCanvas" width="200" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="evaluation">
+            <h3>Comment évaluez-vous votre dessin ?</h3>
+            <div class="evaluation-buttons">
+                <button class="btn btn-success" id="okBtn">✓ OK</button>
+                <button class="btn btn-danger" id="nokBtn">✗ NOK</button>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <p><strong>Statistiques :</strong></p>
+            <p>Lettres pratiquées : <span id="practiceCount">0</span> | 
+               Réussies : <span id="successCount">0</span> | 
+               Taux de réussite : <span id="successRate">0%</span></p>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Données des lettres devanagari organisées par groupes
+            const devanagariData = {
+                voyelles: [
+                    {latin: 'a', devanagari: 'अ', frequency: 1},
+                    {latin: 'ā', devanagari: 'आ', frequency: 1},
+                    {latin: 'i', devanagari: 'इ', frequency: 1},
+                    {latin: 'ī', devanagari: 'ई', frequency: 1},
+                    {latin: 'u', devanagari: 'उ', frequency: 1},
+                    {latin: 'ū', devanagari: 'ऊ', frequency: 1},
+                    {latin: 'e', devanagari: 'ए', frequency: 1},
+                    {latin: 'o', devanagari: 'ओ', frequency: 1}
+                ],
+                palatales: [
+                    {latin: 'ca', devanagari: 'च', frequency: 1},
+                    {latin: 'cha', devanagari: 'छ', frequency: 1},
+                    {latin: 'ja', devanagari: 'ज', frequency: 1},
+                    {latin: 'jha', devanagari: 'झ', frequency: 1},
+                    {latin: 'ña', devanagari: 'ञ', frequency: 1}
+                ],
+                cerebrales: [
+                    {latin: 'ṭa', devanagari: 'ट', frequency: 1},
+                    {latin: 'ṭha', devanagari: 'ठ', frequency: 1},
+                    {latin: 'ḍa', devanagari: 'ड', frequency: 1},
+                    {latin: 'ḍha', devanagari: 'ढ', frequency: 1},
+                    {latin: 'ṇa', devanagari: 'ण', frequency: 1}
+                ],
+                dentales: [
+                    {latin: 'ta', devanagari: 'त', frequency: 1},
+                    {latin: 'tha', devanagari: 'थ', frequency: 1},
+                    {latin: 'da', devanagari: 'द', frequency: 1},
+                    {latin: 'dha', devanagari: 'ध', frequency: 1},
+                    {latin: 'na', devanagari: 'न', frequency: 1}
+                ],
+                labiales: [
+                    {latin: 'pa', devanagari: 'प', frequency: 1},
+                    {latin: 'pha', devanagari: 'फ', frequency: 1},
+                    {latin: 'ba', devanagari: 'ब', frequency: 1},
+                    {latin: 'bha', devanagari: 'भ', frequency: 1},
+                    {latin: 'ma', devanagari: 'म', frequency: 1}
+                ],
+                autres: [
+                    {latin: 'ya', devanagari: 'य', frequency: 1},
+                    {latin: 'ra', devanagari: 'र', frequency: 1},
+                    {latin: 'la', devanagari: 'ल', frequency: 1},
+                    {latin: 'va', devanagari: 'व', frequency: 1},
+                    {latin: 'śa', devanagari: 'श', frequency: 1},
+                    {latin: 'sa', devanagari: 'स', frequency: 1},
+                    {latin: 'ha', devanagari: 'ह', frequency: 1}
+                ]
+            };
+            
+            // Variables globales
+            let currentGroup = 'all';
+            let currentLetter = null;
+            let practiceCount = 0;
+            let successCount = 0;
+            let isDrawing = false;
+            let canvas = document.getElementById('drawingCanvas');
+            let ctx = canvas.getContext('2d');
+            let referenceCanvas = document.getElementById('referenceCanvas');
+            let refCtx = referenceCanvas.getContext('2d');
+            let comparisonCanvas = document.getElementById('comparisonCanvas');
+            let compCtx = comparisonCanvas.getContext('2d');
+            let lastSimilarityScore = 0;
+            let trainingData = null; // Données d'entraînement ML
+            
+            // Configuration du canvas
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Charger les données d'entraînement
+            loadTrainingData();
+            
+            // Initialisation
+            loadNextLetter();
+            updateStats();
+            
+            // Gestion des groupes de lettres
+            $('.group-btn').click(function() {
+                $('.group-btn').removeClass('active');
+                $(this).addClass('active');
+                currentGroup = $(this).data('group');
+                loadNextLetter();
+            });
+            
+            // Fonction pour obtenir les lettres du groupe sélectionné
+            function getLettersFromGroup(group) {
+                if (group === 'all') {
+                    let allLetters = [];
+                    Object.values(devanagariData).forEach(groupLetters => {
+                        allLetters = allLetters.concat(groupLetters);
+                    });
+                    return allLetters;
+                }
+                return devanagariData[group] || [];
+            }
+            
+            // Fonction pour charger la prochaine lettre basée sur la fréquence
+            function loadNextLetter() {
+                const letters = getLettersFromGroup(currentGroup);
+                if (letters.length === 0) return;
+                
+                // Algorithme de sélection pondérée basé sur la fréquence
+                const totalWeight = letters.reduce((sum, letter) => sum + letter.frequency, 0);
+                let random = Math.random() * totalWeight;
+                
+                for (let letter of letters) {
+                    random -= letter.frequency;
+                    if (random <= 0) {
+                        currentLetter = letter;
+                        break;
+                    }
+                }
+                
+                if (!currentLetter) {
+                    currentLetter = letters[0];
+                }
+                
+                // Affichage
+                $('#currentLetter').text(currentLetter.latin);
+                $('#devanagariLetter').text(currentLetter.devanagari).hide();
+                $('#showAnswerBtn').show();
+                clearCanvas();
+            }
+            
+            // Gestion du canvas - Dessin
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Support tactile
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                const mouseEvent = new MouseEvent('mouseup', {});
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            function startDrawing(e) {
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            }
+            
+            function draw(e) {
+                if (!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+            
+            function stopDrawing() {
+                isDrawing = false;
+            }
+            
+            function clearCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            // Boutons de contrôle
+            $('#clearBtn').click(function() {
+                clearCanvas();
+                $('#similarityScore').hide();
+                $('#canvasContainer').hide();
+            });
+            
+            $('#analyzeBtn').click(function() {
+                analyzeDrawing();
+            });
+            
+            $('#nextBtn').click(function() {
+                loadNextLetter();
+                $('#similarityScore').hide();
+                $('#canvasContainer').hide();
+            });
+            
+            $('#showAnswerBtn').click(function() {
+                $('#devanagariLetter').show();
+                $(this).hide();
+            });
+            
+            // Évaluation
+            $('#okBtn').click(function() {
+                evaluateLetter(true);
+            });
+            
+            $('#nokBtn').click(function() {
+                evaluateLetter(false);
+            });
+            
+            function evaluateLetter(success) {
+                practiceCount++;
+                if (success) {
+                    successCount++;
+                    // Diminuer la fréquence (la lettre apparaîtra moins souvent)
+                    currentLetter.frequency = Math.max(0.1, currentLetter.frequency * 0.8);
+                } else {
+                    // Augmenter la fréquence (la lettre apparaîtra plus souvent)
+                    currentLetter.frequency = Math.min(3, currentLetter.frequency * 1.5);
+                }
+                
+                updateStats();
+                setTimeout(loadNextLetter, 500);
+            }
+            
+            function updateStats() {
+                $('#practiceCount').text(practiceCount);
+                $('#successCount').text(successCount);
+                const rate = practiceCount > 0 ? Math.round((successCount / practiceCount) * 100) : 0;
+                $('#successRate').text(rate + '%');
+            }
+            
+            // Fonction pour dessiner la lettre de référence
+            function drawReference() {
+                refCtx.clearRect(0, 0, referenceCanvas.width, referenceCanvas.height);
+                refCtx.font = '120px "Noto Sans Devanagari"';
+                refCtx.fillStyle = '#333';
+                refCtx.textAlign = 'center';
+                refCtx.textBaseline = 'middle';
+                refCtx.fillText(currentLetter.devanagari, referenceCanvas.width/2, referenceCanvas.height/2);
+            }
+            
+            // Fonction pour analyser la similitudedepuis le dessin
+            function analyzeDrawing() {
+                if (!currentLetter) return;
+                
+                // Dessiner la référence
+                drawReference();
+                
+                // Redimensionner le dessin utilisateur pour la comparaison
+                const userCanvas = document.createElement('canvas');
+                userCanvas.width = 200;
+                userCanvas.height = 200;
+                const userCtx = userCanvas.getContext('2d');
+                userCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, 200, 200);
+                
+                // Obtenir les données des pixels
+                const refData = refCtx.getImageData(0, 0, 200, 200);
+                const userImageData = userCtx.getImageData(0, 0, 200, 200);
+                
+                // Calculer la similitude
+                const similarity = calculateSimilarity(refData, userImageData);
+                lastSimilarityScore = similarity;
+                
+                // Créer la visualisation de comparaison
+                createComparisonVisualization(refData, userImageData);
+                
+                // Afficher le résultat
+                displaySimilarityScore(similarity);
+                
+                $('#similarityScore').show();
+                $('#canvasContainer').show();
+            }
+            
+            // Fonction pour extraire les contours d'une image
+            function extractContours(imageData) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                const edges = [];
+                
+                // Détection de contours simple (Sobel approximé)
+                for (let y = 1; y < height - 1; y++) {
+                    for (let x = 1; x < width - 1; x++) {
+                        const idx = (y * width + x) * 4;
+                        
+                        // Vérifier si le pixel est dessinné (noir ou alpha élevé)
+                        const isDrawn = data[idx + 3] > 100 || 
+                                       (data[idx] < 128 && data[idx + 1] < 128 && data[idx + 2] < 128);
+                        
+                        if (isDrawn) {
+                            // Calculer le gradient
+                            const gx = getPixelIntensity(data, x + 1, y, width) - getPixelIntensity(data, x - 1, y, width);
+                            const gy = getPixelIntensity(data, x, y + 1, width) - getPixelIntensity(data, x, y - 1, width);
+                            const magnitude = Math.sqrt(gx * gx + gy * gy);
+                            
+                            if (magnitude > 50) {
+                                edges.push({x: x, y: y, magnitude: magnitude});
+                            }
+                        }
+                    }
+                }
+                return edges;
+            }
+            
+            function getPixelIntensity(data, x, y, width) {
+                const idx = (y * width + x) * 4;
+                if (idx < 0 || idx >= data.length) return 0;
+                
+                // Intensité basée sur alpha et couleur
+                const alpha = data[idx + 3];
+                const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                return alpha > 100 ? (255 - gray) : 0;
+            }
+            
+            // Fonction pour calculer les moments géométriques
+            function calculateMoments(contours, width, height) {
+                if (contours.length === 0) return { m00: 0, m10: 0, m01: 0, mu20: 0, mu11: 0, mu02: 0 };
+                
+                // Moments de base
+                let m00 = 0, m10 = 0, m01 = 0;
+                for (let point of contours) {
+                    const weight = point.magnitude || 1;
+                    m00 += weight;
+                    m10 += point.x * weight;
+                    m01 += point.y * weight;
+                }
+                
+                // Centre de masse
+                const cx = m00 > 0 ? m10 / m00 : width / 2;
+                const cy = m00 > 0 ? m01 / m00 : height / 2;
+                
+                // Moments centraux
+                let mu20 = 0, mu11 = 0, mu02 = 0;
+                for (let point of contours) {
+                    const weight = point.magnitude || 1;
+                    const dx = point.x - cx;
+                    const dy = point.y - cy;
+                    mu20 += dx * dx * weight;
+                    mu11 += dx * dy * weight;
+                    mu02 += dy * dy * weight;
+                }
+                
+                return { m00, m10, m01, mu20, mu11, mu02, cx, cy };
+            }
+            
+            // Fonction pour calculer les caractéristiques de forme
+            function calculateShapeFeatures(contours, width, height) {
+                if (contours.length === 0) {
+                    return {
+                        density: 0,
+                        aspectRatio: 1,
+                        compactness: 0,
+                        centroidX: 0.5,
+                        centroidY: 0.5,
+                        spread: 0,
+                        connectivity: 0,
+                        verticalDistribution: 0,
+                        horizontalDistribution: 0,
+                        topHeaviness: 0
+                    };
+                }
+                
+                const moments = calculateMoments(contours, width, height);
+                
+                // Densité (nombre de points de contour)
+                const density = contours.length / (width * height);
+                
+                // Boîte englobante
+                let minX = width, maxX = 0, minY = height, maxY = 0;
+                for (let point of contours) {
+                    minX = Math.min(minX, point.x);
+                    maxX = Math.max(maxX, point.x);
+                    minY = Math.min(minY, point.y);
+                    maxY = Math.max(maxY, point.y);
+                }
+                
+                const boundingWidth = maxX - minX + 1;
+                const boundingHeight = maxY - minY + 1;
+                const aspectRatio = boundingWidth / boundingHeight;
+                
+                // Compacité (circulaire = 1, allongé < 1)
+                const area = contours.length;
+                const perimeter = Math.sqrt(boundingWidth * boundingWidth + boundingHeight * boundingHeight);
+                const compactness = area > 0 ? (4 * Math.PI * area) / (perimeter * perimeter) : 0;
+                
+                // Centre de masse normalisé
+                const centroidX = moments.cx / width;
+                const centroidY = moments.cy / height;
+                
+                // Étalement (variance)
+                const spread = moments.m00 > 0 ? (moments.mu20 + moments.mu02) / moments.m00 : 0;
+                
+                // *** NOUVELLES CARACTÉRISTIQUES SPÉCIFIQUES AU DEVANAGARI ***
+                
+                // Connectivité des contours (mesure la continuité)
+                let connectivity = 0;
+                for (let i = 0; i < contours.length; i++) {
+                    let nearbyPoints = 0;
+                    for (let j = 0; j < contours.length; j++) {
+                        if (i !== j) {
+                            const dx = contours[i].x - contours[j].x;
+                            const dy = contours[i].y - contours[j].y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            if (distance < 3) nearbyPoints++;
+                        }
+                    }
+                    connectivity += nearbyPoints / contours.length;
+                }
+                connectivity = connectivity / contours.length;
+                
+                // Distribution verticale (important pour le devanagari)
+                const verticalBins = 5;
+                const binHeight = height / verticalBins;
+                const verticalDist = new Array(verticalBins).fill(0);
+                for (let point of contours) {
+                    const bin = Math.min(Math.floor(point.y / binHeight), verticalBins - 1);
+                    verticalDist[bin]++;
+                }
+                // Calculer l'entropie de la distribution verticale
+                let verticalEntropy = 0;
+                for (let count of verticalDist) {
+                    if (count > 0) {
+                        const p = count / contours.length;
+                        verticalEntropy -= p * Math.log2(p);
+                    }
+                }
+                const verticalDistribution = verticalEntropy / Math.log2(verticalBins);
+                
+                // Distribution horizontale
+                const horizontalBins = 5;
+                const binWidth = width / horizontalBins;
+                const horizontalDist = new Array(horizontalBins).fill(0);
+                for (let point of contours) {
+                    const bin = Math.min(Math.floor(point.x / binWidth), horizontalBins - 1);
+                    horizontalDist[bin]++;
+                }
+                let horizontalEntropy = 0;
+                for (let count of horizontalDist) {
+                    if (count > 0) {
+                        const p = count / contours.length;
+                        horizontalEntropy -= p * Math.log2(p);
+                    }
+                }
+                const horizontalDistribution = horizontalEntropy / Math.log2(horizontalBins);
+                
+                // Top-heaviness (les lettres devanagari ont souvent plus de détails en haut)
+                const topHalf = contours.filter(p => p.y < height / 2).length;
+                const bottomHalf = contours.filter(p => p.y >= height / 2).length;
+                const topHeaviness = topHalf / (topHalf + bottomHalf + 1);
+                
+                return {
+                    density,
+                    aspectRatio,
+                    compactness,
+                    centroidX,
+                    centroidY,
+                    spread: spread / (width * height),
+                    connectivity,
+                    verticalDistribution,
+                    horizontalDistribution,
+                    topHeaviness
+                };
+            }
+            
+            // Charger les données d'entraînement
+            async function loadTrainingData() {
+                try {
+                    const response = await fetch('./devanagari_training_data.json');
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    trainingData = await response.json();
+                    console.log(`✓ Données d'entraînement chargées: ${trainingData.length} échantillons`);
+                    console.log('Premier échantillon:', trainingData[0]);
+                } catch (error) {
+                    console.error('✗ Erreur lors du chargement des données:', error);
+                    console.log('Utilisation de données factices pour les tests');
+                    // Créer des données factices pour les tests
+                    trainingData = createMockTrainingData();
+                }
+            }
+            
+            // Créer des données factices pour les tests
+            function createMockTrainingData() {
+                const mockData = [];
+                
+                // Lettres devanagari avec scores variés
+                const letters = ['a', 'ka', 'ma', 'ra'];
+                
+                for (let letter of letters) {
+                    // Score parfait
+                    mockData.push({
+                        letter: letter,
+                        features: Array(17).fill(0).map(() => Math.random() * 2 - 1),
+                        score: 95
+                    });
+                    
+                    // Scores moyens
+                    for (let score of [80, 60, 40]) {
+                        mockData.push({
+                            letter: letter,
+                            features: Array(17).fill(0).map(() => Math.random() * 3 - 1.5),
+                            score: score
+                        });
+                    }
+                }
+                
+                // Formes incorrectes
+                for (let i = 0; i < 10; i++) {
+                    mockData.push({
+                        letter: 'incorrect',
+                        features: Array(17).fill(0).map(() => Math.random() * 4 - 2),
+                        score: Math.random() * 25
+                    });
+                }
+                
+                console.log(`Créé ${mockData.length} données factices`);
+                return mockData;
+            }
+            
+            // Fonction pour extraire les moments de Hu d'un contour
+            function calculateHuMoments(contours) {
+                if (contours.length === 0) return new Array(7).fill(0);
+                
+                // Calculer les moments centraux
+                let m00 = 0, m10 = 0, m01 = 0, m20 = 0, m02 = 0, m11 = 0, m30 = 0, m03 = 0, m21 = 0, m12 = 0;
+                
+                for (let point of contours) {
+                    const x = point.x;
+                    const y = point.y;
+                    const weight = point.magnitude || 1;
+                    
+                    m00 += weight;
+                    m10 += x * weight;
+                    m01 += y * weight;
+                    m20 += x * x * weight;
+                    m02 += y * y * weight;
+                    m11 += x * y * weight;
+                    m30 += x * x * x * weight;
+                    m03 += y * y * y * weight;
+                    m21 += x * x * y * weight;
+                    m12 += x * y * y * weight;
+                }
+                
+                if (m00 === 0) return new Array(7).fill(0);
+                
+                // Centre de masse
+                const cx = m10 / m00;
+                const cy = m01 / m00;
+                
+                // Moments centraux
+                let mu00 = m00;
+                let mu20 = m20 - cx * m10;
+                let mu02 = m02 - cy * m01;
+                let mu11 = m11 - cx * m01;
+                let mu30 = m30 - 3 * cx * m20 + 2 * cx * cx * m10;
+                let mu03 = m03 - 3 * cy * m02 + 2 * cy * cy * m01;
+                let mu21 = m21 - 2 * cx * m11 - cy * m20 + 2 * cx * cx * m01;
+                let mu12 = m12 - 2 * cy * m11 - cx * m02 + 2 * cy * cy * m10;
+                
+                // Moments normalisés
+                const denom = Math.pow(mu00, 2.5);
+                if (denom === 0) return new Array(7).fill(0);
+                
+                const nu20 = mu20 / denom;
+                const nu02 = mu02 / denom;
+                const nu11 = mu11 / denom;
+                const nu30 = mu30 / Math.pow(mu00, 2.5);
+                const nu03 = mu03 / Math.pow(mu00, 2.5);
+                const nu21 = mu21 / Math.pow(mu00, 2.5);
+                const nu12 = mu12 / Math.pow(mu00, 2.5);
+                
+                // Moments de Hu
+                const h1 = nu20 + nu02;
+                const h2 = Math.pow(nu20 - nu02, 2) + 4 * Math.pow(nu11, 2);
+                const h3 = Math.pow(nu30 - 3 * nu12, 2) + Math.pow(3 * nu21 - nu03, 2);
+                const h4 = Math.pow(nu30 + nu12, 2) + Math.pow(nu21 + nu03, 2);
+                const h5 = (nu30 - 3 * nu12) * (nu30 + nu12) * (Math.pow(nu30 + nu12, 2) - 3 * Math.pow(nu21 + nu03, 2)) + 
+                          (3 * nu21 - nu03) * (nu21 + nu03) * (3 * Math.pow(nu30 + nu12, 2) - Math.pow(nu21 + nu03, 2));
+                const h6 = (nu20 - nu02) * (Math.pow(nu30 + nu12, 2) - Math.pow(nu21 + nu03, 2)) + 4 * nu11 * (nu30 + nu12) * (nu21 + nu03);
+                const h7 = (3 * nu21 - nu03) * (nu30 + nu12) * (Math.pow(nu30 + nu12, 2) - 3 * Math.pow(nu21 + nu03, 2)) - 
+                          (nu30 - 3 * nu12) * (nu21 + nu03) * (3 * Math.pow(nu30 + nu12, 2) - Math.pow(nu21 + nu03, 2));
+                
+                // Log transform pour normaliser
+                return [h1, h2, h3, h4, h5, h6, h7].map(h => h !== 0 ? -Math.sign(h) * Math.log10(Math.abs(h) + 1e-10) : 0);
+            }
+            
+            // Fonction pour extraire toutes les caractéristiques d'un dessin
+            function extractFeatures(imageData) {
+                const contours = extractContours(imageData);
+                if (contours.length === 0) {
+                    return new Array(17).fill(0); // 7 moments de Hu + 10 caractéristiques de forme
+                }
+                
+                // Moments de Hu
+                const huMoments = calculateHuMoments(contours);
+                
+                // Caractéristiques de forme
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                // Aire et périmètre approximatifs
+                const area = contours.length;
+                const perimeter = contours.length; // Approximation
+                
+                // Compacité
+                const compactness = perimeter > 0 ? (4 * Math.PI * area) / (perimeter * perimeter) : 0;
+                
+                // Boîte englobante
+                let minX = width, maxX = 0, minY = height, maxY = 0;
+                for (let point of contours) {
+                    minX = Math.min(minX, point.x);
+                    maxX = Math.max(maxX, point.x);
+                    minY = Math.min(minY, point.y);
+                    maxY = Math.max(maxY, point.y);
+                }
+                
+                const boundingWidth = maxX - minX + 1;
+                const boundingHeight = maxY - minY + 1;
+                const aspectRatio = boundingHeight > 0 ? boundingWidth / boundingHeight : 1;
+                const extent = (boundingWidth * boundingHeight) > 0 ? area / (boundingWidth * boundingHeight) : 0;
+                
+                // Solidity approximative
+                const solidity = 0.8; // Valeur par défaut
+                
+                // Position du centre
+                const centerX = boundingWidth > 0 ? (minX + maxX) / 2 / width : 0.5;
+                const centerY = boundingHeight > 0 ? (minY + maxY) / 2 / height : 0.5;
+                
+                // Densité
+                const density = area / (width * height);
+                
+                const shapeFeatures = [
+                    area, perimeter, compactness, aspectRatio, extent,
+                    solidity, centerX, centerY, density, contours.length
+                ];
+                
+                return huMoments.concat(shapeFeatures);
+            }
+            
+            // Fonction pour calculer la distance euclidienne entre deux vecteurs de caractéristiques
+            function euclideanDistance(features1, features2) {
+                if (features1.length !== features2.length) return Infinity;
+                
+                let sum = 0;
+                for (let i = 0; i < features1.length; i++) {
+                    const diff = features1[i] - features2[i];
+                    sum += diff * diff;
+                }
+                return Math.sqrt(sum);
+            }
+            
+            // Algorithme kNN pour prédire le score
+            function predictScore(userFeatures, k = 5) {
+                console.log('=== Début prédiction kNN ===');
+                console.log('Caractéristiques utilisateur:', userFeatures);
+                console.log('Lettre actuelle:', currentLetter ? currentLetter.latin : 'aucune');
+                
+                if (!trainingData || trainingData.length === 0) {
+                    console.log('✗ Pas de données d\'entraînement disponibles');
+                    return 50;
+                }
+                
+                console.log(`✓ ${trainingData.length} données d'entraînement disponibles`);
+                
+                // Filtrer pour la lettre actuelle ET les formes incorrectes
+                const letterData = trainingData.filter(item => {
+                    const match = item.letter === currentLetter.latin || item.letter === 'incorrect';
+                    return match;
+                });
+                
+                console.log(`Données filtrées pour '${currentLetter.latin}': ${letterData.length} échantillons`);
+                
+                if (letterData.length === 0) {
+                    console.log('✗ Pas de données pour cette lettre, utilisation de toutes les données');
+                    // Utiliser toutes les données si aucune correspondance
+                    letterData.push(...trainingData.slice(0, 20)); // Limiter pour les performances
+                }
+                
+                // Calculer les distances
+                const distances = letterData.map(item => {
+                    const dist = euclideanDistance(userFeatures, item.features);
+                    return {
+                        score: item.score,
+                        distance: dist,
+                        letter: item.letter
+                    };
+                }).filter(item => !isNaN(item.distance) && isFinite(item.distance));
+                
+                console.log(`Distances calculées: ${distances.length}`);
+                
+                if (distances.length === 0) {
+                    console.log('✗ Aucune distance valide calculée');
+                    return 50;
+                }
+                
+                // Trier par distance
+                distances.sort((a, b) => a.distance - b.distance);
+                
+                // Prendre les k plus proches voisins
+                const kNearest = distances.slice(0, Math.min(k, distances.length));
+                
+                console.log('K plus proches voisins:');
+                kNearest.forEach((neighbor, i) => {
+                    console.log(`  ${i+1}. ${neighbor.letter} - score: ${neighbor.score}, distance: ${neighbor.distance.toFixed(4)}`);
+                });
+                
+                // Calculer la moyenne simple (sans pondération pour simplifier)
+                const avgScore = kNearest.reduce((sum, neighbor) => sum + neighbor.score, 0) / kNearest.length;
+                
+                const finalScore = Math.round(Math.max(0, Math.min(100, avgScore)));
+                
+                console.log(`Score final: ${finalScore}`);
+                console.log('=== Fin prédiction kNN ===');
+                
+                return finalScore;
+            }
+            
+            // Fonction pour calculer la similitude avec ML
+            function calculateSimilarity(refData, userData) {
+                console.log('\n=== ANALYSE ML ===');
+                try {
+                    // Vérifier les données d'entrée
+                    console.log('Données de référence:', refData.width + 'x' + refData.height);
+                    console.log('Données utilisateur:', userData.width + 'x' + userData.height);
+                    
+                    // Extraire les caractéristiques du dessin utilisateur
+                    const userFeatures = extractFeatures(userData);
+                    
+                    console.log('Caractéristiques extraites:', userFeatures.length, 'features');
+                    console.log('Premières features:', userFeatures.slice(0, 5));
+                    
+                    // Vérifier si les features sont valides
+                    const hasValidFeatures = userFeatures.some(f => f !== 0 && !isNaN(f));
+                    if (!hasValidFeatures) {
+                        console.log('✗ Toutes les caractéristiques sont à zéro ou invalides');
+                        return 10; // Score très bas pour dessin vide
+                    }
+                    
+                    // Utiliser kNN pour prédire le score
+                    const score = predictScore(userFeatures);
+                    
+                    console.log('=== FIN ANALYSE ML ===\n');
+                    return score;
+                    
+                } catch (error) {
+                    console.error('✗ Erreur dans calculateSimilarity ML:', error);
+                    console.error('Stack:', error.stack);
+                    return 25;
+                }
+            }
+            
+            // Fonction pour créer la visualisation de comparaison avec contours
+            function createComparisonVisualization(refData, userData) {
+                compCtx.clearRect(0, 0, comparisonCanvas.width, comparisonCanvas.height);
+                
+                // Dessiner la référence en rouge (transparent)
+                compCtx.globalAlpha = 0.5;
+                compCtx.drawImage(referenceCanvas, 0, 0);
+                
+                // Extraire et dessiner les contours utilisateur en bleu
+                const userCanvas = document.createElement('canvas');
+                userCanvas.width = 200;
+                userCanvas.height = 200;
+                const userCtx = userCanvas.getContext('2d');
+                userCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, 200, 200);
+                
+                const userContours = extractContours(userCtx.getImageData(0, 0, 200, 200));
+                
+                compCtx.globalAlpha = 1.0;
+                compCtx.fillStyle = '#0066ff';
+                compCtx.strokeStyle = '#0066ff';
+                compCtx.lineWidth = 2;
+                
+                // Dessiner les contours utilisateur
+                for (let point of userContours) {
+                    compCtx.beginPath();
+                    compCtx.arc(point.x, point.y, 1, 0, 2 * Math.PI);
+                    compCtx.fill();
+                }
+                
+                // Dessiner les contours de référence en rouge
+                const refContours = extractContours(refData);
+                compCtx.fillStyle = '#ff0066';
+                compCtx.strokeStyle = '#ff0066';
+                
+                for (let point of refContours) {
+                    compCtx.beginPath();
+                    compCtx.arc(point.x, point.y, 1, 0, 2 * Math.PI);
+                    compCtx.fill();
+                }
+                
+                // Légende
+                compCtx.font = '12px Arial';
+                compCtx.fillStyle = '#ff0066';
+                compCtx.fillText('Référence', 5, 15);
+                compCtx.fillStyle = '#0066ff';
+                compCtx.fillText('Votre dessin', 5, 30);
+            }
+            
+            // Fonction pour afficher le score de similitude
+            function displaySimilarityScore(score) {
+                $('#scoreValue').text(score + '%');
+                
+                let message = '';
+                let color = '';
+                
+                if (score >= 75) {
+                    message = 'Excellent ! Très bonne ressemblance';
+                    color = '#28a745';
+                } else if (score >= 55) {
+                    message = 'Bien ! Forme reconnaissable';
+                    color = '#17a2b8';
+                } else if (score >= 35) {
+                    message = 'Acceptable, continuez à vous améliorer';
+                    color = '#ffc107';
+                } else if (score >= 15) {
+                    message = 'Besoin d\amélioration, regardez la référence';
+                    color = '#fd7e14';
+                } else {
+                    message = 'Essayez encore, tracez plus précisément';
+                    color = '#dc3545';
+                }
+                
+                $('#scoreMessage').text(message);
+                $('#scoreValue').css('color', color);
+            }
+            
+            // Modifier l'évaluation pour utiliser le score automatique
+            function evaluateLetter(success) {
+                practiceCount++;
+                
+                // Utiliser le score automatique si disponible
+                if (lastSimilarityScore > 0) {
+                    success = lastSimilarityScore >= 50;
+                }
+                
+                if (success) {
+                    successCount++;
+                    currentLetter.frequency = Math.max(0.1, currentLetter.frequency * 0.8);
+                } else {
+                    currentLetter.frequency = Math.min(3, currentLetter.frequency * 1.5);
+                }
+                
+                updateStats();
+                setTimeout(function() {
+                    loadNextLetter();
+                    lastSimilarityScore = 0;
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
