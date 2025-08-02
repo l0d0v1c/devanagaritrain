@@ -558,13 +558,22 @@
                 $('#successRate').text(rate + '%');
             }
             
-            // Fonction pour dessiner la lettre de référence
+            // Fonction pour dessiner la lettre de référence avec trait plus fin
             function drawReference() {
                 refCtx.clearRect(0, 0, referenceCanvas.width, referenceCanvas.height);
-                refCtx.font = '120px "Noto Sans Devanagari"';
-                refCtx.fillStyle = '#333';
+                
+                // Utiliser strokeText au lieu de fillText pour des traits plus fins
+                refCtx.font = '100px "Noto Sans Devanagari"'; // Réduit de 120 à 100
+                refCtx.strokeStyle = '#333';
+                refCtx.lineWidth = 2; // Trait fin
+                refCtx.lineCap = 'round';
+                refCtx.lineJoin = 'round';
                 refCtx.textAlign = 'center';
                 refCtx.textBaseline = 'middle';
+                refCtx.strokeText(currentLetter.devanagari, referenceCanvas.width/2, referenceCanvas.height/2);
+                
+                // Ajouter un peu de remplissage très léger
+                refCtx.fillStyle = 'rgba(51, 51, 51, 0.3)';
                 refCtx.fillText(currentLetter.devanagari, referenceCanvas.width/2, referenceCanvas.height/2);
             }
             
@@ -791,340 +800,500 @@
                 };
             }
             
-            // Charger les données d'entraînement
+            // Plus besoin de charger des données d'entraînement complexes
             async function loadTrainingData() {
-                try {
-                    const response = await fetch('./devanagari_training_data.json');
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    trainingData = await response.json();
-                    console.log(`✓ Données d'entraînement chargées: ${trainingData.length} échantillons`);
-                    console.log('Premier échantillon:', trainingData[0]);
-                } catch (error) {
-                    console.error('✗ Erreur lors du chargement des données:', error);
-                    console.log('Utilisation de données factices pour les tests');
-                    // Créer des données factices pour les tests
-                    trainingData = createMockTrainingData();
-                }
+                console.log('Algorithme simplifié - pas de données externes nécessaires');
             }
             
-            // Créer des données factices pour les tests
-            function createMockTrainingData() {
-                const mockData = [];
-                
-                // Lettres devanagari avec scores variés
-                const letters = ['a', 'ka', 'ma', 'ra'];
-                
-                for (let letter of letters) {
-                    // Score parfait
-                    mockData.push({
-                        letter: letter,
-                        features: Array(17).fill(0).map(() => Math.random() * 2 - 1),
-                        score: 95
-                    });
-                    
-                    // Scores moyens
-                    for (let score of [80, 60, 40]) {
-                        mockData.push({
-                            letter: letter,
-                            features: Array(17).fill(0).map(() => Math.random() * 3 - 1.5),
-                            score: score
-                        });
-                    }
-                }
-                
-                // Formes incorrectes
-                for (let i = 0; i < 10; i++) {
-                    mockData.push({
-                        letter: 'incorrect',
-                        features: Array(17).fill(0).map(() => Math.random() * 4 - 2),
-                        score: Math.random() * 25
-                    });
-                }
-                
-                console.log(`Créé ${mockData.length} données factices`);
-                return mockData;
-            }
-            
-            // Fonction pour extraire les moments de Hu d'un contour
-            function calculateHuMoments(contours) {
-                if (contours.length === 0) return new Array(7).fill(0);
-                
-                // Calculer les moments centraux
-                let m00 = 0, m10 = 0, m01 = 0, m20 = 0, m02 = 0, m11 = 0, m30 = 0, m03 = 0, m21 = 0, m12 = 0;
-                
-                for (let point of contours) {
-                    const x = point.x;
-                    const y = point.y;
-                    const weight = point.magnitude || 1;
-                    
-                    m00 += weight;
-                    m10 += x * weight;
-                    m01 += y * weight;
-                    m20 += x * x * weight;
-                    m02 += y * y * weight;
-                    m11 += x * y * weight;
-                    m30 += x * x * x * weight;
-                    m03 += y * y * y * weight;
-                    m21 += x * x * y * weight;
-                    m12 += x * y * y * weight;
-                }
-                
-                if (m00 === 0) return new Array(7).fill(0);
-                
-                // Centre de masse
-                const cx = m10 / m00;
-                const cy = m01 / m00;
-                
-                // Moments centraux
-                let mu00 = m00;
-                let mu20 = m20 - cx * m10;
-                let mu02 = m02 - cy * m01;
-                let mu11 = m11 - cx * m01;
-                let mu30 = m30 - 3 * cx * m20 + 2 * cx * cx * m10;
-                let mu03 = m03 - 3 * cy * m02 + 2 * cy * cy * m01;
-                let mu21 = m21 - 2 * cx * m11 - cy * m20 + 2 * cx * cx * m01;
-                let mu12 = m12 - 2 * cy * m11 - cx * m02 + 2 * cy * cy * m10;
-                
-                // Moments normalisés
-                const denom = Math.pow(mu00, 2.5);
-                if (denom === 0) return new Array(7).fill(0);
-                
-                const nu20 = mu20 / denom;
-                const nu02 = mu02 / denom;
-                const nu11 = mu11 / denom;
-                const nu30 = mu30 / Math.pow(mu00, 2.5);
-                const nu03 = mu03 / Math.pow(mu00, 2.5);
-                const nu21 = mu21 / Math.pow(mu00, 2.5);
-                const nu12 = mu12 / Math.pow(mu00, 2.5);
-                
-                // Moments de Hu
-                const h1 = nu20 + nu02;
-                const h2 = Math.pow(nu20 - nu02, 2) + 4 * Math.pow(nu11, 2);
-                const h3 = Math.pow(nu30 - 3 * nu12, 2) + Math.pow(3 * nu21 - nu03, 2);
-                const h4 = Math.pow(nu30 + nu12, 2) + Math.pow(nu21 + nu03, 2);
-                const h5 = (nu30 - 3 * nu12) * (nu30 + nu12) * (Math.pow(nu30 + nu12, 2) - 3 * Math.pow(nu21 + nu03, 2)) + 
-                          (3 * nu21 - nu03) * (nu21 + nu03) * (3 * Math.pow(nu30 + nu12, 2) - Math.pow(nu21 + nu03, 2));
-                const h6 = (nu20 - nu02) * (Math.pow(nu30 + nu12, 2) - Math.pow(nu21 + nu03, 2)) + 4 * nu11 * (nu30 + nu12) * (nu21 + nu03);
-                const h7 = (3 * nu21 - nu03) * (nu30 + nu12) * (Math.pow(nu30 + nu12, 2) - 3 * Math.pow(nu21 + nu03, 2)) - 
-                          (nu30 - 3 * nu12) * (nu21 + nu03) * (3 * Math.pow(nu30 + nu12, 2) - Math.pow(nu21 + nu03, 2));
-                
-                // Log transform pour normaliser
-                return [h1, h2, h3, h4, h5, h6, h7].map(h => h !== 0 ? -Math.sign(h) * Math.log10(Math.abs(h) + 1e-10) : 0);
-            }
-            
-            // Fonction pour extraire toutes les caractéristiques d'un dessin
-            function extractFeatures(imageData) {
-                const contours = extractContours(imageData);
-                if (contours.length === 0) {
-                    return new Array(17).fill(0); // 7 moments de Hu + 10 caractéristiques de forme
-                }
-                
-                // Moments de Hu
-                const huMoments = calculateHuMoments(contours);
-                
-                // Caractéristiques de forme
+            // Convertir une image en matrice binaire
+            function imageToBinary(imageData) {
+                const data = imageData.data;
                 const width = imageData.width;
                 const height = imageData.height;
+                const binary = new Array(height).fill(null).map(() => new Array(width).fill(0));
                 
-                // Aire et périmètre approximatifs
-                const area = contours.length;
-                const perimeter = contours.length; // Approximation
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const idx = (y * width + x) * 4;
+                        const alpha = data[idx + 3];
+                        const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                        
+                        // Pixel dessinné si alpha élevé ou couleur foncée
+                        binary[y][x] = (alpha > 100 || gray < 200) ? 1 : 0;
+                    }
+                }
                 
-                // Compacité
-                const compactness = perimeter > 0 ? (4 * Math.PI * area) / (perimeter * perimeter) : 0;
+                return binary;
+            }
+            
+            // Calculer les projections horizontales et verticales
+            function calculateProjections(binary) {
+                const height = binary.length;
+                const width = binary[0].length;
                 
-                // Boîte englobante
+                // Projection horizontale (somme par ligne)
+                const horizontal = new Array(height).fill(0);
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        horizontal[y] += binary[y][x];
+                    }
+                }
+                
+                // Projection verticale (somme par colonne)
+                const vertical = new Array(width).fill(0);
+                for (let x = 0; x < width; x++) {
+                    for (let y = 0; y < height; y++) {
+                        vertical[x] += binary[y][x];
+                    }
+                }
+                
+                return { horizontal, vertical };
+            }
+            
+            // Comparer deux projections
+            function compareProjections(proj1, proj2) {
+                if (proj1.length !== proj2.length) return 0;
+                
+                // Normaliser les projections
+                const sum1 = proj1.reduce((a, b) => a + b, 0);
+                const sum2 = proj2.reduce((a, b) => a + b, 0);
+                
+                if (sum1 === 0 && sum2 === 0) return 1;
+                if (sum1 === 0 || sum2 === 0) return 0;
+                
+                const norm1 = proj1.map(v => v / sum1);
+                const norm2 = proj2.map(v => v / sum2);
+                
+                // Corrélation croisée
+                let correlation = 0;
+                for (let i = 0; i < norm1.length; i++) {
+                    correlation += norm1[i] * norm2[i];
+                }
+                
+                return correlation;
+            }
+            
+            // Calculer l'Intersection over Union (IoU)
+            function calculateIoU(binary1, binary2) {
+                const height = Math.min(binary1.length, binary2.length);
+                const width = Math.min(binary1[0].length, binary2[0].length);
+                
+                let intersection = 0;
+                let union = 0;
+                
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const pixel1 = binary1[y][x];
+                        const pixel2 = binary2[y][x];
+                        
+                        if (pixel1 === 1 && pixel2 === 1) {
+                            intersection++;
+                        }
+                        if (pixel1 === 1 || pixel2 === 1) {
+                            union++;
+                        }
+                    }
+                }
+                
+                return union > 0 ? intersection / union : 0;
+            }
+            
+            // Calculer des signatures simples de forme
+            function calculateSignature(binary) {
+                const height = binary.length;
+                const width = binary[0].length;
+                
+                let totalPixels = 0;
+                let centerX = 0, centerY = 0;
                 let minX = width, maxX = 0, minY = height, maxY = 0;
-                for (let point of contours) {
-                    minX = Math.min(minX, point.x);
-                    maxX = Math.max(maxX, point.x);
-                    minY = Math.min(minY, point.y);
-                    maxY = Math.max(maxY, point.y);
+                
+                // Calculer centre de masse et boîte englobante
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        if (binary[y][x] === 1) {
+                            totalPixels++;
+                            centerX += x;
+                            centerY += y;
+                            minX = Math.min(minX, x);
+                            maxX = Math.max(maxX, x);
+                            minY = Math.min(minY, y);
+                            maxY = Math.max(maxY, y);
+                        }
+                    }
                 }
                 
-                const boundingWidth = maxX - minX + 1;
-                const boundingHeight = maxY - minY + 1;
-                const aspectRatio = boundingHeight > 0 ? boundingWidth / boundingHeight : 1;
-                const extent = (boundingWidth * boundingHeight) > 0 ? area / (boundingWidth * boundingHeight) : 0;
+                if (totalPixels === 0) {
+                    return { density: 0, aspectRatio: 1, centerX: 0.5, centerY: 0.5, spread: 0 };
+                }
                 
-                // Solidity approximative
-                const solidity = 0.8; // Valeur par défaut
+                centerX /= totalPixels;
+                centerY /= totalPixels;
                 
-                // Position du centre
-                const centerX = boundingWidth > 0 ? (minX + maxX) / 2 / width : 0.5;
-                const centerY = boundingHeight > 0 ? (minY + maxY) / 2 / height : 0.5;
+                const density = totalPixels / (width * height);
+                const aspectRatio = (maxY - minY + 1) > 0 ? (maxX - minX + 1) / (maxY - minY + 1) : 1;
                 
-                // Densité
-                const density = area / (width * height);
+                // Calcul de l'étalement
+                let spread = 0;
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        if (binary[y][x] === 1) {
+                            spread += (x - centerX) * (x - centerX) + (y - centerY) * (y - centerY);
+                        }
+                    }
+                }
+                spread = spread / totalPixels;
                 
-                const shapeFeatures = [
-                    area, perimeter, compactness, aspectRatio, extent,
-                    solidity, centerX, centerY, density, contours.length
-                ];
-                
-                return huMoments.concat(shapeFeatures);
+                return {
+                    density,
+                    aspectRatio,
+                    centerX: centerX / width,
+                    centerY: centerY / height,
+                    spread: spread / (width * height)
+                };
             }
             
-            // Fonction pour calculer la distance euclidienne entre deux vecteurs de caractéristiques
-            function euclideanDistance(features1, features2) {
-                if (features1.length !== features2.length) return Infinity;
-                
-                let sum = 0;
-                for (let i = 0; i < features1.length; i++) {
-                    const diff = features1[i] - features2[i];
-                    sum += diff * diff;
-                }
-                return Math.sqrt(sum);
-            }
-            
-            // Algorithme kNN pour prédire le score
-            function predictScore(userFeatures, k = 5) {
-                console.log('=== Début prédiction kNN ===');
-                console.log('Caractéristiques utilisateur:', userFeatures);
-                console.log('Lettre actuelle:', currentLetter ? currentLetter.latin : 'aucune');
-                
-                if (!trainingData || trainingData.length === 0) {
-                    console.log('✗ Pas de données d\'entraînement disponibles');
-                    return 50;
-                }
-                
-                console.log(`✓ ${trainingData.length} données d'entraînement disponibles`);
-                
-                // Filtrer pour la lettre actuelle ET les formes incorrectes
-                const letterData = trainingData.filter(item => {
-                    const match = item.letter === currentLetter.latin || item.letter === 'incorrect';
-                    return match;
-                });
-                
-                console.log(`Données filtrées pour '${currentLetter.latin}': ${letterData.length} échantillons`);
-                
-                if (letterData.length === 0) {
-                    console.log('✗ Pas de données pour cette lettre, utilisation de toutes les données');
-                    // Utiliser toutes les données si aucune correspondance
-                    letterData.push(...trainingData.slice(0, 20)); // Limiter pour les performances
-                }
-                
-                // Calculer les distances
-                const distances = letterData.map(item => {
-                    const dist = euclideanDistance(userFeatures, item.features);
-                    return {
-                        score: item.score,
-                        distance: dist,
-                        letter: item.letter
-                    };
-                }).filter(item => !isNaN(item.distance) && isFinite(item.distance));
-                
-                console.log(`Distances calculées: ${distances.length}`);
-                
-                if (distances.length === 0) {
-                    console.log('✗ Aucune distance valide calculée');
-                    return 50;
-                }
-                
-                // Trier par distance
-                distances.sort((a, b) => a.distance - b.distance);
-                
-                // Prendre les k plus proches voisins
-                const kNearest = distances.slice(0, Math.min(k, distances.length));
-                
-                console.log('K plus proches voisins:');
-                kNearest.forEach((neighbor, i) => {
-                    console.log(`  ${i+1}. ${neighbor.letter} - score: ${neighbor.score}, distance: ${neighbor.distance.toFixed(4)}`);
-                });
-                
-                // Calculer la moyenne simple (sans pondération pour simplifier)
-                const avgScore = kNearest.reduce((sum, neighbor) => sum + neighbor.score, 0) / kNearest.length;
-                
-                const finalScore = Math.round(Math.max(0, Math.min(100, avgScore)));
-                
-                console.log(`Score final: ${finalScore}`);
-                console.log('=== Fin prédiction kNN ===');
-                
-                return finalScore;
-            }
-            
-            // Fonction pour calculer la similitude avec ML
+            // Fonction de comparaison avec alignement et normalisation
             function calculateSimilarity(refData, userData) {
-                console.log('\n=== ANALYSE ML ===');
+                console.log('\n=== COMPARAISON AVEC ALIGNEMENT ===');
+                console.log('Taille référence:', refData.width, 'x', refData.height);
+                console.log('Taille utilisateur:', userData.width, 'x', userData.height);
+                
                 try {
-                    // Vérifier les données d'entrée
-                    console.log('Données de référence:', refData.width + 'x' + refData.height);
-                    console.log('Données utilisateur:', userData.width + 'x' + userData.height);
+                    // 1. Détecter les bounding boxes
+                    const refBbox = getBoundingBox(refData);
+                    const userBbox = getBoundingBox(userData);
                     
-                    // Extraire les caractéristiques du dessin utilisateur
-                    const userFeatures = extractFeatures(userData);
+                    console.log('Bbox référence:', refBbox);
+                    console.log('Bbox utilisateur:', userBbox);
                     
-                    console.log('Caractéristiques extraites:', userFeatures.length, 'features');
-                    console.log('Premières features:', userFeatures.slice(0, 5));
-                    
-                    // Vérifier si les features sont valides
-                    const hasValidFeatures = userFeatures.some(f => f !== 0 && !isNaN(f));
-                    if (!hasValidFeatures) {
-                        console.log('✗ Toutes les caractéristiques sont à zéro ou invalides');
-                        return 10; // Score très bas pour dessin vide
+                    // Si pas de dessin utilisateur
+                    if (userBbox.pixelCount === 0) {
+                        console.log('Aucun dessin utilisateur détecté');
+                        return 0;
                     }
                     
-                    // Utiliser kNN pour prédire le score
-                    const score = predictScore(userFeatures);
+                    // Si pas de référence (problème)
+                    if (refBbox.pixelCount === 0) {
+                        console.log('Pas de référence détectée');
+                        // Score basé uniquement sur la complexité du dessin
+                        if (userBbox.pixelCount < 50) return 15;
+                        if (userBbox.pixelCount < 200) return 35;
+                        if (userBbox.pixelCount < 500) return 55;
+                        return 25;
+                    }
                     
-                    console.log('=== FIN ANALYSE ML ===\n');
-                    return score;
+                    // 2. Extraire et normaliser les régions d'intérêt
+                    const refNormalized = extractAndNormalize(refData, refBbox, 80);
+                    const userNormalized = extractAndNormalize(userData, userBbox, 80);
+                    
+                    // 3. Comparer les images alignées
+                    const comparison = compareAlignedImages(refNormalized, userNormalized);
+                    
+                    // 4. Calculer le score avec compensation pour les différences d'épaisseur
+                    let baseScore = 0;
+                    
+                    // Score principal basé sur IoU
+                    const iouScore = comparison.iou * 100;
+                    
+                    // Score basé sur la précision (important pour éviter le bruit)
+                    const precisionScore = comparison.precision * 100;
+                    
+                    // Score basé sur le rappel (important pour capturer la forme)
+                    const recallScore = comparison.recall * 100;
+                    
+                    // Score F1
+                    const f1Score = comparison.precision + comparison.recall > 0 ? 
+                        (2 * comparison.precision * comparison.recall) / (comparison.precision + comparison.recall) * 100 : 0;
+                    
+                    // Si le rapport de pixels est très déséquilibré (comme 1628 vs 307), privilégier la précision
+                    const pixelRatio = Math.min(comparison.userPixels, comparison.refPixels) / Math.max(comparison.userPixels, comparison.refPixels);
+                    
+                    if (pixelRatio < 0.3) {
+                        // Cas de traits très différents : privilégier précision et forme
+                        baseScore = (precisionScore * 0.6) + (recallScore * 0.4);
+                        console.log('Mode compensation épaisseur activé');
+                    } else {
+                        // Cas normal : utiliser IoU et F1
+                        baseScore = (iouScore * 0.6) + (f1Score * 0.4);
+                    }
+                    
+                    console.log(`Score IoU: ${iouScore.toFixed(1)}, Score F1: ${f1Score.toFixed(1)}`);
+                    console.log(`Score de base: ${baseScore.toFixed(1)}`);
+                    
+                    // 5. Ajustements et bonus
+                    let finalScore = baseScore;
+                    
+                    // Bonus pour forme complexe (encourage les vrais essais)
+                    if (userBbox.pixelCount > 100) {
+                        finalScore += 10; // Augmenté de 5 à 10
+                        console.log('Bonus complexité: +10');
+                    }
+                    
+                    // Bonus pour proportions correctes
+                    const refAspect = refBbox.width / refBbox.height;
+                    const userAspect = userBbox.width / userBbox.height;
+                    const aspectDiff = Math.abs(refAspect - userAspect) / Math.max(refAspect, userAspect);
+                    
+                    if (aspectDiff < 0.4) { // Plus tolérant : 0.4 au lieu de 0.3
+                        finalScore += 15; // Augmenté de 10 à 15
+                        console.log('Bonus proportions: +15');
+                    }
+                    
+                    // Bonus spécial pour haute précision (dessins soignés)
+                    if (comparison.precision > 0.4) {
+                        finalScore += 15;
+                        console.log('Bonus précision: +15');
+                    }
+                    
+                    // Bonus pour bon rappel (forme capturée)
+                    if (comparison.recall > 0.15) {
+                        finalScore += 10;
+                        console.log('Bonus rappel: +10');
+                    }
+                    
+                    // Pénalité pour dessins trop simples
+                    if (userBbox.pixelCount < 50) {
+                        finalScore -= 20;
+                        console.log('Pénalité simplicité: -20');
+                    }
+                    
+                    // Limiter entre 5 et 100
+                    finalScore = Math.max(5, Math.min(100, finalScore));
+                    
+                    console.log('Score final:', finalScore.toFixed(1));
+                    console.log('=== FIN COMPARAISON ===\n');
+                    
+                    return Math.round(finalScore);
                     
                 } catch (error) {
-                    console.error('✗ Erreur dans calculateSimilarity ML:', error);
-                    console.error('Stack:', error.stack);
+                    console.error('Erreur:', error);
                     return 25;
                 }
             }
             
-            // Fonction pour créer la visualisation de comparaison avec contours
+            // Détecter si un pixel est dessinné
+            function isPixelDrawn(r, g, b, alpha) {
+                return (r < 150 && g < 150 && b < 150) && alpha > 200;
+            }
+            
+            // Trouver la bounding box d'un dessin
+            function getBoundingBox(imageData) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                let minX = width, maxX = -1, minY = height, maxY = -1;
+                let pixelCount = 0;
+                
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const idx = (y * width + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx + 1];
+                        const b = data[idx + 2];
+                        const alpha = data[idx + 3];
+                        
+                        if (isPixelDrawn(r, g, b, alpha)) {
+                            pixelCount++;
+                            minX = Math.min(minX, x);
+                            maxX = Math.max(maxX, x);
+                            minY = Math.min(minY, y);
+                            maxY = Math.max(maxY, y);
+                        }
+                    }
+                }
+                
+                // Si aucun pixel dessinné, retourner une box vide
+                if (pixelCount === 0) {
+                    return { minX: 0, maxX: 0, minY: 0, maxY: 0, width: 0, height: 0, pixelCount: 0 };
+                }
+                
+                return {
+                    minX, maxX, minY, maxY,
+                    width: maxX - minX + 1,
+                    height: maxY - minY + 1,
+                    pixelCount
+                };
+            }
+            
+            // Extraire la région d'intérêt et la normaliser
+            function extractAndNormalize(imageData, bbox, targetSize = 80) {
+                if (bbox.pixelCount === 0) {
+                    // Retourner une image vide
+                    const emptyData = new Uint8ClampedArray(targetSize * targetSize * 4);
+                    emptyData.fill(255); // Blanc
+                    return new ImageData(emptyData, targetSize, targetSize);
+                }
+                
+                const data = imageData.data;
+                const width = imageData.width;
+                
+                // Ajouter une marge de 10% autour de la bounding box
+                const margin = Math.max(2, Math.round(Math.max(bbox.width, bbox.height) * 0.1));
+                const cropMinX = Math.max(0, bbox.minX - margin);
+                const cropMaxX = Math.min(width - 1, bbox.maxX + margin);
+                const cropMinY = Math.max(0, bbox.minY - margin);
+                const cropMaxY = Math.min(imageData.height - 1, bbox.maxY + margin);
+                
+                const cropWidth = cropMaxX - cropMinX + 1;
+                const cropHeight = cropMaxY - cropMinY + 1;
+                
+                console.log(`Extraction: ${cropWidth}x${cropHeight} -> ${targetSize}x${targetSize}`);
+                
+                // Créer l'image normalisée
+                const normalizedData = new Uint8ClampedArray(targetSize * targetSize * 4);
+                normalizedData.fill(255); // Fond blanc
+                
+                // Redimensionner et copier
+                const scaleX = cropWidth / targetSize;
+                const scaleY = cropHeight / targetSize;
+                
+                for (let y = 0; y < targetSize; y++) {
+                    for (let x = 0; x < targetSize; x++) {
+                        // Coordonnées dans l'image originale
+                        const origX = Math.round(cropMinX + x * scaleX);
+                        const origY = Math.round(cropMinY + y * scaleY);
+                        
+                        if (origX < width && origY < imageData.height) {
+                            const origIdx = (origY * width + origX) * 4;
+                            const normIdx = (y * targetSize + x) * 4;
+                            
+                            normalizedData[normIdx] = data[origIdx];     // R
+                            normalizedData[normIdx + 1] = data[origIdx + 1]; // G
+                            normalizedData[normIdx + 2] = data[origIdx + 2]; // B
+                            normalizedData[normIdx + 3] = data[origIdx + 3]; // A
+                        }
+                    }
+                }
+                
+                return new ImageData(normalizedData, targetSize, targetSize);
+            }
+            
+            // Comparer deux images alignées avec tolérance pour l'épaisseur de trait
+            function compareAlignedImages(refImage, userImage) {
+                const refData = refImage.data;
+                const userData = userImage.data;
+                const width = refImage.width;
+                const height = refImage.height;
+                
+                let refPixels = 0, userPixels = 0, matchPixels = 0, nearMatches = 0;
+                
+                // Première passe : compter les pixels
+                for (let i = 0; i < refData.length; i += 4) {
+                    const refDrawn = isPixelDrawn(refData[i], refData[i + 1], refData[i + 2], refData[i + 3]);
+                    const userDrawn = isPixelDrawn(userData[i], userData[i + 1], userData[i + 2], userData[i + 3]);
+                    
+                    if (refDrawn) refPixels++;
+                    if (userDrawn) userPixels++;
+                    if (refDrawn && userDrawn) matchPixels++;
+                }
+                
+                // Deuxième passe : chercher des correspondances proches pour compenser les différences d'épaisseur
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const idx = (y * width + x) * 4;
+                        const userDrawn = isPixelDrawn(userData[idx], userData[idx + 1], userData[idx + 2], userData[idx + 3]);
+                        
+                        if (userDrawn) {
+                            // Chercher des pixels de référence dans un rayon de 3 pixels
+                            let foundNear = false;
+                            for (let dy = -3; dy <= 3 && !foundNear; dy++) {
+                                for (let dx = -3; dx <= 3 && !foundNear; dx++) {
+                                    const nx = x + dx;
+                                    const ny = y + dy;
+                                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                                        const nIdx = (ny * width + nx) * 4;
+                                        const refDrawn = isPixelDrawn(refData[nIdx], refData[nIdx + 1], refData[nIdx + 2], refData[nIdx + 3]);
+                                        if (refDrawn) {
+                                            nearMatches++;
+                                            foundNear = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Calculer IoU avec les correspondances proches
+                const adjustedMatches = Math.max(matchPixels, nearMatches * 0.7); // 70% de crédit pour les correspondances proches
+                const union = refPixels + userPixels - adjustedMatches;
+                const iou = union > 0 ? adjustedMatches / union : 0;
+                
+                // Calculer précision et rappel ajustés
+                const precision = userPixels > 0 ? adjustedMatches / userPixels : 0;
+                const recall = refPixels > 0 ? adjustedMatches / refPixels : 0;
+                
+                console.log(`Comparaison alignée - Réf: ${refPixels}, User: ${userPixels}`);
+                console.log(`Matches exacts: ${matchPixels}, Matches proches: ${nearMatches}, Ajustés: ${adjustedMatches.toFixed(0)}`);
+                console.log(`IoU: ${iou.toFixed(3)}, Précision: ${precision.toFixed(3)}, Rappel: ${recall.toFixed(3)}`);
+                
+                return { iou, precision, recall, refPixels, userPixels, matchPixels: adjustedMatches };
+            }
+            
+            // Compter les pixels dessinnés dans une image (fonction simplifiée)
+            function countDrawnPixels(imageData) {
+                const bbox = getBoundingBox(imageData);
+                return bbox.pixelCount;
+            }
+            
+            // Fonction pour créer la visualisation de comparaison avec images alignées
             function createComparisonVisualization(refData, userData) {
                 compCtx.clearRect(0, 0, comparisonCanvas.width, comparisonCanvas.height);
                 
-                // Dessiner la référence en rouge (transparent)
-                compCtx.globalAlpha = 0.5;
-                compCtx.drawImage(referenceCanvas, 0, 0);
-                
-                // Extraire et dessiner les contours utilisateur en bleu
-                const userCanvas = document.createElement('canvas');
-                userCanvas.width = 200;
-                userCanvas.height = 200;
-                const userCtx = userCanvas.getContext('2d');
-                userCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, 200, 200);
-                
-                const userContours = extractContours(userCtx.getImageData(0, 0, 200, 200));
-                
-                compCtx.globalAlpha = 1.0;
-                compCtx.fillStyle = '#0066ff';
-                compCtx.strokeStyle = '#0066ff';
-                compCtx.lineWidth = 2;
-                
-                // Dessiner les contours utilisateur
-                for (let point of userContours) {
-                    compCtx.beginPath();
-                    compCtx.arc(point.x, point.y, 1, 0, 2 * Math.PI);
-                    compCtx.fill();
+                try {
+                    // Obtenir les bounding boxes
+                    const refBbox = getBoundingBox(refData);
+                    const userBbox = getBoundingBox(userData);
+                    
+                    if (refBbox.pixelCount === 0 || userBbox.pixelCount === 0) {
+                        compCtx.fillStyle = '#666';
+                        compCtx.font = '14px Arial';
+                        compCtx.fillText('Pas de comparaison possible', 10, 100);
+                        return;
+                    }
+                    
+                    // Normaliser les deux images à 80x80
+                    const refNormalized = extractAndNormalize(refData, refBbox, 80);
+                    const userNormalized = extractAndNormalize(userData, userBbox, 80);
+                    
+                    // Créer des canvas temporaires pour affichage
+                    const tempRefCanvas = document.createElement('canvas');
+                    const tempUserCanvas = document.createElement('canvas');
+                    tempRefCanvas.width = tempUserCanvas.width = 80;
+                    tempRefCanvas.height = tempUserCanvas.height = 80;
+                    
+                    const tempRefCtx = tempRefCanvas.getContext('2d');
+                    const tempUserCtx = tempUserCanvas.getContext('2d');
+                    
+                    tempRefCtx.putImageData(refNormalized, 0, 0);
+                    tempUserCtx.putImageData(userNormalized, 0, 0);
+                    
+                    // Dessiner les images alignées côte à côte
+                    compCtx.drawImage(tempRefCanvas, 10, 10, 80, 80);
+                    compCtx.drawImage(tempUserCanvas, 110, 10, 80, 80);
+                    
+                    // Superposition pour comparaison directe
+                    compCtx.globalAlpha = 0.5;
+                    compCtx.fillStyle = '#ff6666';
+                    compCtx.drawImage(tempRefCanvas, 10, 110, 80, 80);
+                    compCtx.fillStyle = '#6666ff';
+                    compCtx.drawImage(tempUserCanvas, 10, 110, 80, 80);
+                    compCtx.globalAlpha = 1.0;
+                    
+                    // Légendes
+                    compCtx.fillStyle = '#333';
+                    compCtx.font = '12px Arial';
+                    compCtx.fillText('Référence', 15, 105);
+                    compCtx.fillText('Votre dessin', 115, 105);
+                    compCtx.fillText('Superposition', 15, 205);
+                    
+                } catch (error) {
+                    console.error('Erreur visualisation:', error);
+                    compCtx.fillStyle = '#666';
+                    compCtx.font = '14px Arial';
+                    compCtx.fillText('Erreur de visualisation', 10, 100);
                 }
-                
-                // Dessiner les contours de référence en rouge
-                const refContours = extractContours(refData);
-                compCtx.fillStyle = '#ff0066';
-                compCtx.strokeStyle = '#ff0066';
-                
-                for (let point of refContours) {
-                    compCtx.beginPath();
-                    compCtx.arc(point.x, point.y, 1, 0, 2 * Math.PI);
-                    compCtx.fill();
-                }
-                
-                // Légende
-                compCtx.font = '12px Arial';
-                compCtx.fillStyle = '#ff0066';
-                compCtx.fillText('Référence', 5, 15);
-                compCtx.fillStyle = '#0066ff';
-                compCtx.fillText('Votre dessin', 5, 30);
             }
             
             // Fonction pour afficher le score de similitude
@@ -1134,20 +1303,20 @@
                 let message = '';
                 let color = '';
                 
-                if (score >= 75) {
+                if (score >= 80) {
                     message = 'Excellent ! Très bonne ressemblance';
                     color = '#28a745';
-                } else if (score >= 55) {
+                } else if (score >= 60) {
                     message = 'Bien ! Forme reconnaissable';
                     color = '#17a2b8';
-                } else if (score >= 35) {
-                    message = 'Acceptable, continuez à vous améliorer';
+                } else if (score >= 40) {
+                    message = 'Correct, continuez à vous améliorer';
                     color = '#ffc107';
-                } else if (score >= 15) {
-                    message = 'Besoin d\amélioration, regardez la référence';
+                } else if (score >= 25) {
+                    message = 'Effort visible, mais à améliorer';
                     color = '#fd7e14';
                 } else {
-                    message = 'Essayez encore, tracez plus précisément';
+                    message = 'Essayez encore, regardez bien la référence';
                     color = '#dc3545';
                 }
                 
@@ -1159,9 +1328,9 @@
             function evaluateLetter(success) {
                 practiceCount++;
                 
-                // Utiliser le score automatique si disponible
+                // Utiliser le score automatique si disponible (seuil plus accessible)
                 if (lastSimilarityScore > 0) {
-                    success = lastSimilarityScore >= 50;
+                    success = lastSimilarityScore >= 45;
                 }
                 
                 if (success) {
