@@ -76,11 +76,31 @@
         }
         
         .current-letter {
-            font-size: 48px;
+            font-size: 24px;
             font-weight: bold;
             color: #333;
-            margin: 20px 0;
+            margin: 5px 0;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: all 0.3s;
+            min-width: 60px;
+            display: inline-block;
+        }
+        
+        .current-letter:hover {
+            background-color: #e9ecef;
+            transform: scale(1.05);
+        }
+        
+        .current-letter.latin {
             font-family: 'Times New Roman', serif;
+        }
+        
+        .current-letter.devanagari {
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: 32px;
+            color: #007bff;
         }
         
         .devanagari-letter {
@@ -152,6 +172,13 @@
             font-size: 18px;
             font-weight: bold;
             color: #2c5aa0;
+        }
+        
+        .switch-indicator {
+            color: #999;
+            font-size: 12px;
+            margin-left: 5px;
+            vertical-align: middle;
         }
         
         .score-value {
@@ -283,7 +310,15 @@
             }
             
             .current-letter {
-                font-size: 36px;
+                font-size: 20px;
+            }
+            
+            .current-letter.devanagari {
+                font-size: 28px;
+            }
+            
+            .switch-indicator {
+                font-size: 10px;
             }
             
             .devanagari-letter {
@@ -344,15 +379,11 @@
         </div>
         
         <div class="exercise-area">
-            <div class="letter-display">
-                <h3>Lettre à dessiner :</h3>
-                <div class="current-letter" id="currentLetter">a</div>
-                <button class="btn show-answer-btn" id="showAnswerBtn">Afficher la réponse</button>
-                <div class="devanagari-letter" id="devanagariLetter" style="display: none;"></div>
-            </div>
-            
             <div class="canvas-area">
-                <h3>Dessinez ici :</h3>
+                <div class="letter-prompt">
+                    Dessinez la lettre : <span class="current-letter latin" id="currentLetter" title="Cliquez pour basculer">a</span> <span style="color: #999; font-size: 12px;">⇄</span>
+                </div>
+                
                 <canvas id="drawingCanvas" width="300" height="300"></canvas>
                 <div class="realtime-score" id="realtimeScore">Score en temps réel : 0%</div>
                 
@@ -377,6 +408,11 @@
                         <canvas id="comparisonCanvas" width="200" height="200"></canvas>
                     </div>
                 </div>
+            </div>
+            
+            <div class="letter-display" id="letterDisplay" style="display: none;">
+                <h3>Réponse :</h3>
+                <div class="devanagari-letter" id="devanagariLetter"></div>
             </div>
         </div>
         
@@ -463,6 +499,7 @@
             let compCtx = comparisonCanvas.getContext('2d');
             let lastSimilarityScore = 0;
             let trainingData = null; // Données d'entraînement ML
+            let showingDevanagari = false; // État d'affichage de la lettre
             
             // Configuration du canvas
             ctx.strokeStyle = '#333';
@@ -519,9 +556,10 @@
                 }
                 
                 // Affichage
-                $('#currentLetter').text(currentLetter.latin);
-                $('#devanagariLetter').text(currentLetter.devanagari).hide();
-                $('#showAnswerBtn').show();
+                $('#currentLetter').text(currentLetter.latin)
+                                  .removeClass('devanagari')
+                                  .addClass('latin');
+                showingDevanagari = false;
                 clearCanvas();
                 
                 // Initialiser le score temps réel
@@ -529,6 +567,9 @@
                     .css('background-color', '#f0f8ff')
                     .css('border-color', '#4a90e2')
                     .css('color', '#2c5aa0');
+                    
+                // Réinitialiser l'affichage de la lettre
+                showingDevanagari = false;
             }
             
             // Gestion du canvas - Dessin
@@ -609,17 +650,35 @@
             
             $('#analyzeBtn').click(function() {
                 analyzeDrawing();
+                $('#letterDisplay').show();
             });
             
             $('#nextBtn').click(function() {
                 loadNextLetter();
                 $('#similarityScore').hide();
                 $('#canvasContainer').hide();
+                $('#letterDisplay').hide();
             });
             
-            $('#showAnswerBtn').click(function() {
-                $('#devanagariLetter').show();
-                $(this).hide();
+            // Clic sur la lettre pour basculer entre latin et devanagari
+            $('#currentLetter').click(function() {
+                if (!currentLetter) return;
+                
+                const $letter = $(this);
+                
+                if (showingDevanagari) {
+                    // Retour au latin
+                    $letter.text(currentLetter.latin)
+                           .removeClass('devanagari')
+                           .addClass('latin');
+                    showingDevanagari = false;
+                } else {
+                    // Basculer vers devanagari
+                    $letter.text(currentLetter.devanagari)
+                           .removeClass('latin')
+                           .addClass('devanagari');
+                    showingDevanagari = true;
+                }
             });
             
             // Évaluation
