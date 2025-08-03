@@ -2,6 +2,12 @@
 
 Application web interactive pour apprendre à écrire les lettres de l'alphabet devanagari (Sanskrit/Hindi).
 
+## 🌐 Accès direct
+
+**Utilisez l'application en ligne :** https://l0d0v1c.github.io/devanagaritrain/
+
+**Code source :** https://github.com/l0d0v1c/devanagaritrain
+
 ## 🎯 Fonctionnalités
 
 ### Interface principale
@@ -144,34 +150,40 @@ L'application utilise un algorithme avancé de **computer vision** en JavaScript
 ```
 devanagaritrain/
 ├── index.html          # Application principale (tout-en-un)
-├── README.md           # Documentation
-└── generate_training_data.py  # Script Python (optionnel)
+└── README.md           # Documentation
 ```
 
-### Fichier unique
-L'application est entièrement contenue dans `index.html` :
-- HTML structure
-- CSS responsive
-- JavaScript avec algorithmes de CV
-- Données des lettres devanagari
-- Pas de dépendances externes (sauf Google Fonts)
+### Application autonome
+L'application est entièrement contenue dans un seul fichier `index.html` :
+- ✅ HTML structure
+- ✅ CSS responsive
+- ✅ JavaScript avec algorithmes de computer vision
+- ✅ Données des 35 lettres devanagari intégrées
+- ✅ Aucune dépendance externe (sauf Google Fonts)
+- ✅ Fonctionne hors ligne après premier chargement
 
 ## 🌐 Déploiement
 
 ### GitHub Pages
-1. Push sur GitHub
-2. Activer GitHub Pages sur la branche main
-3. L'application sera accessible à `https://username.github.io/devanagaritrain/`
+1. Fork le repository : https://github.com/l0d0v1c/devanagaritrain
+2. Activer GitHub Pages dans Settings > Pages
+3. L'application sera accessible à `https://votre-username.github.io/devanagaritrain/`
 
-### Serveur local
+**Version officielle :** https://l0d0v1c.github.io/devanagaritrain/
+
+### Installation locale
 ```bash
-# Python 3
-python -m http.server 8000
+# Cloner le repository
+git clone https://github.com/l0d0v1c/devanagaritrain.git
+cd devanagaritrain
 
-# Node.js
+# Serveur local (optionnel)
+python -m http.server 8000
+# ou
 npx serve .
 
-# Ou ouvrir directement index.html dans le navigateur
+# Ou simplement ouvrir index.html dans le navigateur
+open index.html
 ```
 
 ## 🤝 Contribution
