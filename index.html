@@ -381,7 +381,7 @@
         <div class="exercise-area">
             <div class="canvas-area">
                 <div class="letter-prompt">
-                    Dessinez la lettre : <span class="current-letter latin" id="currentLetter" title="Cliquez pour basculer">a</span> <span style="color: #999; font-size: 12px;">⇄</span>
+                    Dessinez la lettre : <span class="current-letter latin" id="currentLetter" title="Cliquez pour basculer">a</span> <span style="color: #007bff; font-size: 14px; font-weight: bold; margin-left: 8px;">⇄</span>
                 </div>
                 
                 <canvas id="drawingCanvas" width="300" height="300"></canvas>
@@ -956,7 +956,7 @@
             
             // Plus besoin de charger des données d'entraînement complexes
             async function loadTrainingData() {
-                console.log('Algorithme simplifié - pas de données externes nécessaires');
+                // Algorithme simplifié - pas de données externes nécessaires
             }
             
             // Convertir une image en matrice binaire
@@ -1108,28 +1108,23 @@
             
             // Fonction de comparaison avec alignement et normalisation
             function calculateSimilarity(refData, userData) {
-                console.log('\n=== COMPARAISON AVEC ALIGNEMENT ===');
-                console.log('Taille référence:', refData.width, 'x', refData.height);
-                console.log('Taille utilisateur:', userData.width, 'x', userData.height);
+                // Comparaison avec alignement
                 
                 try {
                     // 1. Détecter les bounding boxes
                     const refBbox = getBoundingBox(refData);
                     const userBbox = getBoundingBox(userData);
                     
-                    console.log('Bbox référence:', refBbox);
-                    console.log('Bbox utilisateur:', userBbox);
+                    // Détection des bounding boxes effectuée
                     
                     // Si pas de dessin utilisateur
                     if (userBbox.pixelCount === 0) {
-                        console.log('Aucun dessin utilisateur détecté');
-                        return 0;
+                        return 0; // Aucun dessin utilisateur
                     }
                     
                     // Si pas de référence (problème)
                     if (refBbox.pixelCount === 0) {
-                        console.log('Pas de référence détectée');
-                        // Score basé uniquement sur la complexité du dessin
+                        // Pas de référence - score basé sur la complexité
                         if (userBbox.pixelCount < 50) return 15;
                         if (userBbox.pixelCount < 200) return 35;
                         if (userBbox.pixelCount < 500) return 55;
@@ -1165,14 +1160,13 @@
                     if (pixelRatio < 0.3) {
                         // Cas de traits très différents : privilégier précision et forme
                         baseScore = (precisionScore * 0.6) + (recallScore * 0.4);
-                        console.log('Mode compensation épaisseur activé');
+                        // Mode compensation épaisseur activé
                     } else {
                         // Cas normal : utiliser IoU et F1
                         baseScore = (iouScore * 0.6) + (f1Score * 0.4);
                     }
                     
-                    console.log(`Score IoU: ${iouScore.toFixed(1)}, Score F1: ${f1Score.toFixed(1)}`);
-                    console.log(`Score de base: ${baseScore.toFixed(1)}`);
+                    // Calcul des scores effectué
                     
                     // 5. Ajustements et bonus
                     let finalScore = baseScore;
@@ -1180,7 +1174,7 @@
                     // Bonus pour forme complexe (encourage les vrais essais)
                     if (userBbox.pixelCount > 100) {
                         finalScore += 10; // Augmenté de 5 à 10
-                        console.log('Bonus complexité: +10');
+                        // Bonus complexité: +10
                     }
                     
                     // Bonus pour proportions correctes
@@ -1190,37 +1184,36 @@
                     
                     if (aspectDiff < 0.4) { // Plus tolérant : 0.4 au lieu de 0.3
                         finalScore += 15; // Augmenté de 10 à 15
-                        console.log('Bonus proportions: +15');
+                        // Bonus proportions: +15
                     }
                     
                     // Bonus spécial pour haute précision (dessins soignés)
                     if (comparison.precision > 0.4) {
                         finalScore += 15;
-                        console.log('Bonus précision: +15');
+                        // Bonus précision: +15
                     }
                     
                     // Bonus pour bon rappel (forme capturée)
                     if (comparison.recall > 0.15) {
                         finalScore += 10;
-                        console.log('Bonus rappel: +10');
+                        // Bonus rappel: +10
                     }
                     
                     // Pénalité pour dessins trop simples
                     if (userBbox.pixelCount < 50) {
                         finalScore -= 20;
-                        console.log('Pénalité simplicité: -20');
+                        // Pénalité simplicité: -20
                     }
                     
                     // Limiter entre 5 et 100
                     finalScore = Math.max(5, Math.min(100, finalScore));
                     
-                    console.log('Score final:', finalScore.toFixed(1));
-                    console.log('=== FIN COMPARAISON ===\n');
+                    // Calcul du score final terminé
                     
                     return Math.round(finalScore);
                     
                 } catch (error) {
-                    console.error('Erreur:', error);
+                    // Erreur de calcul
                     return 25;
                 }
             }
@@ -1292,7 +1285,7 @@
                 const cropWidth = cropMaxX - cropMinX + 1;
                 const cropHeight = cropMaxY - cropMinY + 1;
                 
-                console.log(`Extraction: ${cropWidth}x${cropHeight} -> ${targetSize}x${targetSize}`);
+                // Extraction et normalisation effectuées
                 
                 // Créer l'image normalisée
                 const normalizedData = new Uint8ClampedArray(targetSize * targetSize * 4);
@@ -1378,9 +1371,7 @@
                 const precision = userPixels > 0 ? adjustedMatches / userPixels : 0;
                 const recall = refPixels > 0 ? adjustedMatches / refPixels : 0;
                 
-                console.log(`Comparaison alignée - Réf: ${refPixels}, User: ${userPixels}`);
-                console.log(`Matches exacts: ${matchPixels}, Matches proches: ${nearMatches}, Ajustés: ${adjustedMatches.toFixed(0)}`);
-                console.log(`IoU: ${iou.toFixed(3)}, Précision: ${precision.toFixed(3)}, Rappel: ${recall.toFixed(3)}`);
+                // Comparaison alignée effectuée
                 
                 return { iou, precision, recall, refPixels, userPixels, matchPixels: adjustedMatches };
             }
@@ -1443,7 +1434,7 @@
                     compCtx.fillText('Superposition', 15, 205);
                     
                 } catch (error) {
-                    console.error('Erreur visualisation:', error);
+                    // Erreur de visualisation
                     compCtx.fillStyle = '#666';
                     compCtx.font = '14px Arial';
                     compCtx.fillText('Erreur de visualisation', 10, 100);
@@ -1507,7 +1498,7 @@
                     }
                     
                 } catch (error) {
-                    console.log('Erreur score temps réel:', error);
+                    // Erreur score temps réel
                 }
             }
             
