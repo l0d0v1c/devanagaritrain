@@ -409,11 +409,6 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="letter-display" id="letterDisplay" style="display: none;">
-                <h3>Réponse :</h3>
-                <div class="devanagari-letter" id="devanagariLetter"></div>
-            </div>
         </div>
         
         <div class="evaluation">
@@ -653,14 +648,12 @@
             
             $('#analyzeBtn').click(function() {
                 analyzeDrawing();
-                $('#letterDisplay').show();
             });
             
             $('#nextBtn').click(function() {
                 loadNextLetter();
                 $('#similarityScore').hide();
                 $('#canvasContainer').hide();
-                $('#letterDisplay').hide();
             });
             
             // Clic sur la lettre pour basculer entre latin et devanagari
